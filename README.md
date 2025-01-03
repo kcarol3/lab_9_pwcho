@@ -70,7 +70,7 @@ macbookpro@MacBook-Pro-MacBook lab9 % kubectl exec -it app-a-5799485f95-g5r4q --
 000
 command terminated with exit code 6
 ```
-Komunikacja nie powiodła się więc reguły sieciowe zostały poprawnie zde
+Komunikacja nie powiodła się więc reguły sieciowe zostały poprawnie zdefiniowane
 
 - Testowanie działania ingress:
 ```bash
