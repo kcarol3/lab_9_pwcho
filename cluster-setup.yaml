@@ -1,0 +1,182 @@
+---
+# Namespace definitions
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: appns-a
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: appns-b
+---
+
+# Deployment for app-a
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-a
+  namespace: appns-a
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app-a
+  template:
+    metadata:
+      labels:
+        app: app-a
+    spec:
+      containers:
+      - name: app-a
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+---
+
+# Service for app-a
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-a
+  namespace: appns-a
+spec:
+  selector:
+    app: app-a
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+
+# Deployment for app-b
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-b
+  namespace: appns-b
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app-b
+  template:
+    metadata:
+      labels:
+        app: app-b
+    spec:
+      containers:
+      - name: app-b
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+---
+
+# Service for app-b
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-b
+  namespace: appns-b
+spec:
+  selector:
+    app: app-b
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+
+# ExternalName Service for app-a in default namespace
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-a-external
+  namespace: default
+spec:
+  type: ExternalName
+  externalName: app-a.appns-a.svc.cluster.local
+---
+
+# ExternalName Service for app-b in default namespace
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-b-external
+  namespace: default
+spec:
+  type: ExternalName
+  externalName: app-b.appns-b.svc.cluster.local
+---
+
+# Default backend deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-app
+  template:
+    metadata:
+      labels:
+        app: hello-app
+    spec:
+      containers:
+      - name: hello-app
+        image: corelab/hello-app:1.0
+        ports:
+        - containerPort: 80
+---
+
+# Default backend service
+apiVersion: v1
+kind: Service
+metadata:
+  name: default-backend
+spec:
+  selector:
+    app: hello-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+
+# Ingress resource
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lab9-ingress
+spec:
+  ingressClassName: nginx
+  defaultBackend:
+    service:
+      name: default-backend
+      port:
+        number: 80
+  rules:
+  - host: a.lab9.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app-a-external
+            port:
+              number: 80
+  - host: b.lab9.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app-b-external
+            port:
+              number: 80
